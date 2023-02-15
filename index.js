@@ -2,7 +2,40 @@ const PORT = process.env.PORT || 8000;
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+var nodemailer = require('nodemailer');
 
+var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'joris.delorme38@gmail.com',
+        pass: 'nsybiicmqwhgvgay'
+    }
+});
+
+var mailOptions = {
+    from: 'joris.delorme38@gmail.com',
+    to: 'joris.delorme38@gmail.com',
+    subject: 'De nouvelles excurtions sont disponibles !',
+    text: ""
+};
+
+const equalsCheck = (a, b) => {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+const formatMail = () => {
+    let res = ''
+
+    for (let i = 0; i < sorties.length; i++) {
+        res += `<h2>${sorties[i].day}</h2><br />`
+        for (let j = 0; j < sorties[i].sorties.length; j++) {
+            res += `<p>${sorties[i].sorties[j]}</p>`
+        }
+        res += '<br />'
+    }
+
+    return res
+} 
 
 const newspapers = [
     {
@@ -17,75 +50,66 @@ const newspapers = [
     }
 ]
 
-const articles = [];
+let sorties = [];
+let temp = []
 
-newspapers.forEach(newspaper => {
-    axios.get(newspaper.address)
-    .then(response => {
+const getSorties = () => {
+    axios.get("https://www.cafchambery.com/agenda.html")
+        .then(response => {
 
-        const html = response.data;
-        const $ = cheerio.load(html);
+            const html = response.data;
+            const $ = cheerio.load(html);
+            temp = [...sorties]
+            sorties = []
 
-        $('[type="article"], [data-testid="search-bodega-result"]', html).each((i, elm ) => {
-            let title = ''
-            if (newspaper.name === 'bbc') {
-                title = $(elm).find('a').text();
-            } else {
-                title = $(elm).find('h4').text();
-            }
-            const imgURL = $(elm).find('img').attr('src');
-            const url = newspaper.base + $(elm).find('a').attr('href');
-            articles.push({
-                title,
-                url,
-                imgURL,
-                source: newspaper.name
+            $('tr', html).each((i, elm) => {
+                let day = $(elm).find('.agenda-gauche').text()
+                let newSorties = []
+
+                $('.agenda-evt-debut', elm).each((i, sortie) => {
+                    //console.log('------------');
+                    if ($(sortie).find(".temoin-places-dispos.on").html() !== null) {
+                        let s = $(sortie).find("h2").text().replace('\n', '')
+                        newSorties.push(s.slice(3, s.length - 2))
+                    }
+                })
+
+                if (newSorties.length) {
+                    sorties.push({
+                        day: day,
+                        sorties: newSorties
+                    })
+                }
             })
-        })
-    }).catch((err) => console.log(err))
-})
+
+            if (!equalsCheck(sorties, temp)) {
+                transporter.sendMail({...mailOptions, html: formatMail()}, function(error, info){
+                    if (error) {
+                      console.log(error);
+                    } else {
+                      console.log('Email sent: ' + info.response);
+                    }
+                  });
+            }
+
+        }).catch((err) => console.log(err))
+}
+
+const runner = () => {
+    getSorties()
+    return
+    setInterval(() => {
+        getSorties()
+    }, 3000)
+}
+
+runner()
 
 const app = express()
 
 app.get('/', (req, res) => {
-    res.json("Hello World")
+    res.json(sorties)
 })
-
-app.get('/news', (req, res) => {
-    res.json(articles)
-})
-
-app.get('/news/:newspaperId', async(req, res) => {
-
-    const newspaperId =req.params.newspaperId
-    const newspaper = newspapers.filter(newspaper => newspaper.name === newspaperId)[0]
-
-    axios.get(newspaper.address)
-    .then(response => {
-
-        const html = response.data;
-        const $ = cheerio.load(html);
-        const articles2 = [];
-
-        $('[type="article"], [data-testid="search-bodega-result"]', html).each((i, elm ) => {
-            let title = ''
-            if (newspaper.name === 'bbc') {
-                title = $(elm).find('a').text();
-            } else {
-                title = $(elm).find('h4').text();
-            }
-            const imgURL = $(elm).find('img').attr('src');
-            const url = newspaper.base + $(elm).find('a').attr('href');
-            articles2.push({
-                title,
-                url,
-                imgURL,
-                source: newspaper.name
-            })
-        })
-        res.json(articles2)
-    }).catch((err) => console.log(err))
-} )
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
