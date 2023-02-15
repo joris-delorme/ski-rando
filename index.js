@@ -4,6 +4,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 var nodemailer = require('nodemailer');
 
+
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -35,7 +36,7 @@ const formatMail = () => {
     }
 
     return res
-} 
+}
 
 const newspapers = [
     {
@@ -50,7 +51,93 @@ const newspapers = [
     }
 ]
 
-let sorties = [];
+let sorties = [
+    {
+        "day": "Mer 15 Février",
+        "sorties": [
+            "SEANCE BLOC CROIZAT 18H-20H",
+            "Soirée Apéro repas / jeu vidéo (Tekken)"
+        ]
+    },
+    {
+        "day": "Jeu 16 Février",
+        "sorties": [
+            "Escalade libre adulte Croizat 12h-14h"
+        ]
+    },
+    {
+        "day": "Ven 17 Février",
+        "sorties": [
+            "Escalade gare 6h30-8h",
+            "Croizat 20h - 22h"
+        ]
+    },
+    {
+        "day": "Sam 18 Février",
+        "sorties": [
+            "alpinisme facile à Chamonix REPORTEE [jour 1]",
+            "Escalade à la Gare 9-12H 18/2"
+        ]
+    },
+    {
+        "day": "Dim 19 Février",
+        "sorties": [
+            "Les Contamines - Sortie en Station",
+            "DECOUVERTE SKI DE RANDO"
+        ]
+    },
+    {
+        "day": "Lun 20 Février",
+        "sorties": [
+            "Escalade libre adulte P. COT 20h-22h"
+        ]
+    },
+    {
+        "day": "Mar 21 Février",
+        "sorties": [
+            "Au refuge des Aiguilles d'Arves [jour 1]",
+            "Vers le Grand Croisse Baulet",
+            "Boutron mardi 20 22h"
+        ]
+    },
+    {
+        "day": "Mer 22 Février",
+        "sorties": [
+            "Escalade en salle",
+            "Soirée encadrant / co-encadrant - RETEX GESTION COURSE COMMUNICATION"
+        ]
+    },
+    {
+        "day": "Jeu 23 Février",
+        "sorties": [
+            "Escalade libre adulte P. COT 20h-22h"
+        ]
+    },
+    {
+        "day": "Ven 24 Février",
+        "sorties": [
+            "Week-end ski de fond à Bessans [jour 1]",
+            "Raquette alpine et CSV à La Grave [jour 1]"
+        ]
+    },
+    {
+        "day": "Sam 25 Février",
+        "sorties": [
+            "CAMP DE BASE ALPI #1 [jour 1]",
+            "Ecole d'Av 'perfectionnement' - Alpi neige/glace 2 jours [jour 1]",
+            "Escalade Cot 9-12h 25/2",
+            "Trail Blanc Nocturne LA FEE BLANCHE"
+        ]
+    },
+    {
+        "day": "Dim 26 Février",
+        "sorties": [
+            "Trail du Grésivaudan: 30km OU 22km+8km en relais OU 8km",
+            "L'Alpe d'Huez - Sortie en Station",
+            "Le Grand Crétet"
+        ]
+    }
+];
 let temp = []
 
 const getSorties = () => {
@@ -83,13 +170,13 @@ const getSorties = () => {
             })
 
             if (!equalsCheck(sorties, temp)) {
-                transporter.sendMail({...mailOptions, html: formatMail()}, function(error, info){
+                transporter.sendMail({ ...mailOptions, html: formatMail() }, function (error, info) {
                     if (error) {
-                      console.log(error);
+                        console.log(error);
                     } else {
-                      console.log('Email sent: ' + info.response);
+                        console.log('Email sent: ' + info.response);
                     }
-                  });
+                });
             }
 
         }).catch((err) => console.log(err))
@@ -97,10 +184,9 @@ const getSorties = () => {
 
 const runner = () => {
     getSorties()
-    return
     setInterval(() => {
         getSorties()
-    }, 3000)
+    }, 10800000)
 }
 
 runner()
